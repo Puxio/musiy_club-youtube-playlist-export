@@ -1,1 +1,50 @@
-
+{
+  "manifest_version": 3,
+  "name": "Playlist/XSPF Exporter",
+  "version": "1.0.0",
+  "description": "Export Musify.club and Youtube.com (albums or playlist) to xspf playlists and stream in your favourite player.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "downloads"
+  ],
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "*://*.musify.club/*",
+    "*://inv.nadeko.net/*",
+    "*://*.invidious.*/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Export Playlist/Album"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.youtube.com/*",
+        "*://*.musify.club/*"
+      ],
+      "js": [
+        "utils.js",
+        "content_script.js"
+      ]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "scripts/youtube.js",
+        "scripts/musify.js",
+        "scripts/redirect-youtube.js",
+        "utils.js"
+      ],
+      "matches": [
+        "*://*.youtube.com/*",
+        "*://*.musify.club/*"
+      ]
+    }
+  ]
+}
