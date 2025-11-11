@@ -1,50 +1,47 @@
 {
   "manifest_version": 3,
-  "name": "Playlist/XSPF Exporter",
-  "version": "1.0.0",
+  "name": "Musiy Club & YouTube Playlist Exporter",
+  "version": "1.0.7",
   "description": "Export Musify.club and Youtube.com (albums or playlist) to xspf playlists and stream in your favourite player.",
   "permissions": [
-    "activeTab",
-    "scripting",
-    "downloads"
+    "storage"
   ],
   "host_permissions": [
-    "*://*.youtube.com/*",
-    "*://*.musify.club/*",
-    "*://inv.nadeko.net/*",
-    "*://*.invidious.*/*"
+    "https://musify.club/*",
+    "https://www.youtube.com/*",
+    "https://music.youtube.com/*",
+    "https://invidious.snopyta.org/*",
+    "https://yewtu.be/*",
+    "https://invidious.kavin.rocks/*",
+    "https://invidious.fdn.fr/*",
+    "https://vid.puffyan.us/*",
+    "https://invidious.tiekoetter.com/*",
+    "https://inv.riverside.rocks/*"
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Export Playlist/Album"
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
   },
   "content_scripts": [
     {
       "matches": [
-        "*://*.youtube.com/*",
-        "*://*.musify.club/*"
+        "https://musify.club/*",
+        "https://www.youtube.com/*",
+        "https://music.youtube.com/*"
       ],
       "js": [
         "utils.js",
-        "content_script.js"
+        "content.js"
       ]
     }
   ],
-  "background": {
-    "service_worker": "background.js"
-  },
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "scripts/youtube.js",
-        "scripts/musify.js",
-        "scripts/redirect-youtube.js",
-        "utils.js"
-      ],
-      "matches": [
-        "*://*.youtube.com/*",
-        "*://*.musify.club/*"
-      ]
-    }
-  ]
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
 }
