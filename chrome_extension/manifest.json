@@ -35,7 +35,7 @@
       ],
       "js": [
         "utils.js",
-        "content_scripts.js"
+        "content_script.js"
       ]
     }
   ],
