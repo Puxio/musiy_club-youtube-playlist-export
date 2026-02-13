@@ -1,9 +1,14 @@
-# Musify.club and Youtube export album/playst to xspf playlist
+# Musify.club Youtube KHisider export album/playst to xspf playlist
 
-Export Musify.club and Youtube.com (albums or playlist) to xspf playlists and stream in your favourite player. 
+Export Musify.club KHinsider and Youtube.com (albums or playlist) to xspf playlists and stream them in your favourite player. 
 
+Musify.club :
+big catalogue and high quality music
+
+KHisider:
+video games music
+
+Youtube:
 Youtube use an Invidious public instance, change istance if it's not available.
-
-(Some Invidious instances doesn't accept CORS so use redirect)
-
+(Some Invidious instances doesn't accept CORS so there's a redirect script)
 You need a Yotube capable player for Youtube playlist (ie. AIMP + Youtube plugin, PotPlayer)
