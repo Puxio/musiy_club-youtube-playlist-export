@@ -81,7 +81,7 @@
 
         albumTitle = potentialTitleText || 'Unknown Album';
         // Add the required prefix and sanitize the filename
-        suggestedFilename = `[Musify_club] ${albumArtist} (${albumYear}) - ${albumTitle}.xspf`.replace(/[\\/:*?"<>|]/g, '_');
+        suggestedFilename = `${albumArtist} (${albumYear}) - ${albumTitle} [Musify_club].xspf`.replace(/[\\/:*?"<>|]/g, '_');
         console.log(`Suggested filename: ${suggestedFilename}`);
     } else {
         console.warn(`Album header (${ALBUM_HEADER_SELECTOR}) not found. Cannot suggest filename or populate album tag.`);
