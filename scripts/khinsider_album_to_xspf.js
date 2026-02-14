@@ -1,22 +1,21 @@
 /**
  * KHInsider XSPF Playlist Generator - V3.2
  * * Description:
- * This script extracts direct MP3 links from downloads.khinsider.com album pages.
- * It performs asynchronous fetch requests to each track's subpage to bypass 
- * the intermediate HTML redirect, ensuring the XSPF file contains the actual 
- * audio stream URL.
- * * Usage:
- * 1. Navigate to an album page on downloads.khinsider.com
- * 2. Open DevTools (F12) and paste this script into the Console.
- * 3. Wait for the extraction to complete.
+ * This script extracts direct audio links from downloads.khinsider.com album pages.
+ * It performs asynchronous fetch requests to each track subpage to retrieve 
+ * the final CDN URL, bypassing the intermediate HTML pages.
+ * * Instructions:
+ * 1. Open an album page on downloads.khinsider.com
+ * 2. Open Browser DevTools (F12) and go to the Console tab.
+ * 3. Paste and run this script.
  */
 (function() {
     console.log("--- Starting KHInsider XSPF Extraction (V3.2) ---");
 
-    // 1. Identify the Playlist Table (ID is #songlist)
+    // 1. Identify the Playlist Table (Target ID: #songlist)
     const playlistTable = document.getElementById('songlist');
     if (!playlistTable) {
-        console.error("❌ Table #songlist not found! Make sure you are on an album page.");
+        console.error("❌ Table #songlist not found! Please ensure you are on a valid album page.");
         return;
     }
 
@@ -24,20 +23,20 @@
     const albumTitle = document.querySelector('h2')?.innerText.trim() || "Unknown Album";
     const albumImage = document.querySelector('.album-front-cover img')?.src || "";
     
-    // Custom filename format as requested: "Album Title [Khinsider].xspf"
+    // Final filename format: "Album Title [Khinsider].xspf"
     const sanitizedFilename = `${albumTitle.replace(/[\\/:*?"<>|]/g, '_')} [Khinsider].xspf`;
 
     // 3. Collect Track Rows
-    // Filter rows to include only those containing track links, excluding headers/footers
+    // Filter rows to find those containing album track links, excluding header/footer <tr>
     const rows = Array.from(playlistTable.querySelectorAll('tr')).filter(row => {
         return row.querySelector('a[href*="/game-soundtracks/album/"]') && !row.querySelector('th');
     });
 
-    console.log(`🚀 Found ${rows.length} tracks. Extracting direct links...`);
+    console.log(`🚀 Found ${rows.length} tracks. Processing direct links (please wait)...`);
 
     /**
-     * Helper: Fetches the track page and scrapes the direct MP3 download link
-     * @param {string} pageUrl - The URL of the track's subpage
+     * Helper: Fetches the track subpage and scrapes the direct audio download link
+     * @param {string} pageUrl - The URL of the specific track page
      */
     const getDirectLink = async (pageUrl) => {
         try {
@@ -46,17 +45,17 @@
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
             
-            // Scrape the primary download link (usually the first .songDownloadLink)
+            // Scrape the actual file link from the primary download button/link
             const directLink = doc.querySelector('.songDownloadLink')?.closest('a')?.href;
             return directLink || null;
         } catch (err) {
-            console.error(`Error fetching page: ${pageUrl}`, err);
+            console.error(`Error fetching data for: ${pageUrl}`, err);
             return null;
         }
     };
 
     /**
-     * Main processing loop
+     * Main Async Execution Loop
      */
     const processTracks = async () => {
         const xspfTrackEntries = [];
@@ -65,22 +64,21 @@
             const row = rows[i];
             const trackLink = row.querySelector('a[href*="/game-soundtracks/album/"]');
             
-            // Skip invalid rows
             if (!trackLink) continue;
 
             const trackTitle = trackLink.innerText.trim();
             const trackPageUrl = trackLink.href;
             
-            console.log(`[${i + 1}/${rows.length}] Fetching direct link for: ${trackTitle}...`);
+            console.log(`[${i + 1}/${rows.length}] Extracting: ${trackTitle}...`);
             
-            const directMp3Url = await getDirectLink(trackPageUrl);
+            const directAudioUrl = await getDirectLink(trackPageUrl);
             
-            if (!directMp3Url) {
-                console.warn(`⚠️ Skipping ${trackTitle}: Direct link not found.`);
+            if (!directAudioUrl) {
+                console.warn(`⚠️ Warning: Could not find direct link for ${trackTitle}. Skipping.`);
                 continue;
             }
 
-            // Extract Duration (Format: MM:SS or H:MM:SS)
+            // Extract Duration (Handles formats: MM:SS or H:MM:SS)
             const cells = Array.from(row.querySelectorAll('td'));
             const durationCell = cells.find(td => /^\d+:\d+(:\d+)?$/.test(td.innerText.trim()));
             let durationMs = 0;
@@ -90,9 +88,9 @@
                 if (parts.length === 3) durationMs = (parts[0] * 3600 + parts[1] * 60 + parts[2]) * 1000;
             }
 
-            // Construct XSPF XML entry for this track
+            // Build the XSPF XML entry for the track
             xspfTrackEntries.push(`    <track>
-      <location>${directMp3Url.replace(/&/g, '&amp;')}</location>
+      <location>${directAudioUrl.replace(/&/g, '&amp;')}</location>
       <title>${trackTitle.replace(/&/g, '&amp;')}</title>
       <album>${albumTitle.replace(/&/g, '&amp;')}</album>
       <trackNum>${i + 1}</trackNum>
@@ -101,11 +99,11 @@
         }
 
         if (xspfTrackEntries.length === 0) {
-            console.error("❌ No valid tracks were processed.");
+            console.error("❌ No audio tracks were extracted successfully.");
             return;
         }
 
-        // 4. Assemble full XSPF Content
+        // 4. Assemble XSPF XML structure
         const xspfContent = `<?xml version="1.0" encoding="UTF-8"?>
 <playlist version="1.0" xmlns="http://xspf.org/ns/0/">
   <title>${albumTitle.replace(/&/g, '&amp;')}</title>
@@ -115,7 +113,7 @@ ${xspfTrackEntries.join('\n')}
   </trackList>
 </playlist>`;
 
-        // 5. Trigger File Download
+        // 5. Generate Blob and trigger download
         const blob = new Blob([xspfContent], { type: 'application/xspf+xml' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -126,7 +124,7 @@ ${xspfTrackEntries.join('\n')}
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        console.log(`✅ Success! Playlist downloaded as: ${sanitizedFilename}`);
+        console.log(`✅ Playlist ready! Filename: ${sanitizedFilename}`);
     };
 
     processTracks();
