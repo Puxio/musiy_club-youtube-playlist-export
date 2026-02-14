@@ -1,131 +1,130 @@
 /**
- * KHInsider XSPF Playlist Generator - V3.2
+ * KHInsider XSPF Playlist Generator - V3.3
  * * Description:
- * This script extracts direct audio links from downloads.khinsider.com album pages.
- * It performs asynchronous fetch requests to each track subpage to retrieve 
- * the final CDN URL, bypassing the intermediate HTML pages.
- * * Instructions:
- * 1. Open an album page on downloads.khinsider.com
- * 2. Open Browser DevTools (F12) and go to the Console tab.
- * 3. Paste and run this script.
+ * Extracts direct audio links and full-res album cover from KHInsider.
+ * * Usage:
+ * Run in DevTools console on a KHInsider album page.
  */
 (function() {
-    console.log("--- Starting KHInsider XSPF Extraction (V3.2) ---");
+    try {
+        console.log("--- Starting KHInsider XSPF Extraction (V3.3) ---");
 
-    // 1. Identify the Playlist Table (Target ID: #songlist)
-    const playlistTable = document.getElementById('songlist');
-    if (!playlistTable) {
-        console.error("❌ Table #songlist not found! Please ensure you are on a valid album page.");
-        return;
-    }
-
-    // 2. Album Metadata Extraction
-    const albumTitle = document.querySelector('h2')?.innerText.trim() || "Unknown Album";
-    const albumImage = document.querySelector('.album-front-cover img')?.src || "";
-    
-    // Final filename format: "Album Title [Khinsider].xspf"
-    const sanitizedFilename = `${albumTitle.replace(/[\\/:*?"<>|]/g, '_')} [Khinsider].xspf`;
-
-    // 3. Collect Track Rows
-    // Filter rows to find those containing album track links, excluding header/footer <tr>
-    const rows = Array.from(playlistTable.querySelectorAll('tr')).filter(row => {
-        return row.querySelector('a[href*="/game-soundtracks/album/"]') && !row.querySelector('th');
-    });
-
-    console.log(`🚀 Found ${rows.length} tracks. Processing direct links (please wait)...`);
-
-    /**
-     * Helper: Fetches the track subpage and scrapes the direct audio download link
-     * @param {string} pageUrl - The URL of the specific track page
-     */
-    const getDirectLink = async (pageUrl) => {
-        try {
-            const response = await fetch(pageUrl);
-            const html = await response.text();
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            
-            // Scrape the actual file link from the primary download button/link
-            const directLink = doc.querySelector('.songDownloadLink')?.closest('a')?.href;
-            return directLink || null;
-        } catch (err) {
-            console.error(`Error fetching data for: ${pageUrl}`, err);
-            return null;
+        const playlistTable = document.getElementById('songlist');
+        if (!playlistTable) {
+            console.error("❌ Table #songlist not found! Ensure you are on an album page.");
+            return;
         }
-    };
 
-    /**
-     * Main Async Execution Loop
-     */
-    const processTracks = async () => {
-        const xspfTrackEntries = [];
+        // 1. Global Album Metadata
+        const albumTitle = document.querySelector('h2')?.innerText.trim() || "Unknown Album";
         
-        for (let i = 0; i < rows.length; i++) {
-            const row = rows[i];
-            const trackLink = row.querySelector('a[href*="/game-soundtracks/album/"]');
-            
-            if (!trackLink) continue;
+        // Extract full-res image from the anchor's href inside .albumImage
+        const albumImageAnchor = document.querySelector('.albumImage a');
+        const albumImageUrl = albumImageAnchor ? albumImageAnchor.href : "";
+        
+        if (albumImageUrl) {
+            console.log("📸 Full-res album cover detected:", albumImageUrl);
+        }
+        
+        const sanitizedFilename = `${albumTitle.replace(/[\\/:*?"<>|]/g, '_')} [Khinsider].xspf`;
 
-            const trackTitle = trackLink.innerText.trim();
-            const trackPageUrl = trackLink.href;
-            
-            console.log(`[${i + 1}/${rows.length}] Extracting: ${trackTitle}...`);
-            
-            const directAudioUrl = await getDirectLink(trackPageUrl);
-            
-            if (!directAudioUrl) {
-                console.warn(`⚠️ Warning: Could not find direct link for ${trackTitle}. Skipping.`);
-                continue;
+        // 2. Collect and Filter Track Rows
+        const rows = Array.from(playlistTable.querySelectorAll('tr')).filter(row => {
+            return row.querySelector('a[href*="/game-soundtracks/album/"]') && !row.querySelector('th');
+        });
+
+        if (rows.length === 0) {
+            console.error("❌ No tracks found in the playlist table.");
+            return;
+        }
+
+        console.log(`🚀 Found ${rows.length} tracks. Starting extraction loop...`);
+
+        /**
+         * Helper: Fetches the track page to get the direct CDN link
+         */
+        const getDirectLink = async (pageUrl) => {
+            try {
+                const response = await fetch(pageUrl);
+                const html = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                // The songDownloadLink class is the most reliable way to find the MP3 link
+                return doc.querySelector('.songDownloadLink')?.closest('a')?.href || null;
+            } catch (err) {
+                return null;
             }
+        };
 
-            // Extract Duration (Handles formats: MM:SS or H:MM:SS)
-            const cells = Array.from(row.querySelectorAll('td'));
-            const durationCell = cells.find(td => /^\d+:\d+(:\d+)?$/.test(td.innerText.trim()));
-            let durationMs = 0;
-            if (durationCell) {
-                const parts = durationCell.innerText.trim().split(':').map(Number);
-                if (parts.length === 2) durationMs = (parts[0] * 60 + parts[1]) * 1000;
-                if (parts.length === 3) durationMs = (parts[0] * 3600 + parts[1] * 60 + parts[2]) * 1000;
-            }
+        /**
+         * Main Logic: Iterate through tracks and build XSPF
+         */
+        const processTracks = async () => {
+            const xspfTrackEntries = [];
+            
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const trackLink = row.querySelector('a[href*="/game-soundtracks/album/"]');
+                
+                if (!trackLink) continue;
 
-            // Build the XSPF XML entry for the track
-            xspfTrackEntries.push(`    <track>
+                const trackTitle = trackLink.innerText.trim();
+                const trackPageUrl = trackLink.href;
+                
+                // Progress log (confirmed working after filter check)
+                console.log(`[${i + 1}/${rows.length}] Extracting: ${trackTitle}...`);
+                
+                const directAudioUrl = await getDirectLink(trackPageUrl);
+                
+                if (!directAudioUrl) {
+                    console.warn(`⚠️ Failed to retrieve link for: ${trackTitle}`);
+                    continue;
+                }
+
+                // Duration extraction logic
+                const cells = Array.from(row.querySelectorAll('td'));
+                const durationCell = cells.find(td => /^\d+:\d+(:\d+)?$/.test(td.innerText.trim()));
+                let durationMs = 0;
+                if (durationCell) {
+                    const parts = durationCell.innerText.trim().split(':').map(Number);
+                    durationMs = parts.length === 2 ? (parts[0] * 60 + parts[1]) * 1000 : (parts[0] * 3600 + parts[1] * 60 + parts[2]) * 1000;
+                }
+
+                xspfTrackEntries.push(`    <track>
       <location>${directAudioUrl.replace(/&/g, '&amp;')}</location>
       <title>${trackTitle.replace(/&/g, '&amp;')}</title>
       <album>${albumTitle.replace(/&/g, '&amp;')}</album>
       <trackNum>${i + 1}</trackNum>
       ${durationMs > 0 ? `<duration>${durationMs}</duration>` : ''}
     </track>`);
-        }
+            }
 
-        if (xspfTrackEntries.length === 0) {
-            console.error("❌ No audio tracks were extracted successfully.");
-            return;
-        }
+            // 3. Assemble and Download XSPF
+            let xspfContent = `<?xml version="1.0" encoding="UTF-8"?>\n<playlist version="1.0" xmlns="http://xspf.org/ns/0/">\n`;
+            xspfContent += `  <title>${albumTitle.replace(/&/g, '&amp;')}</title>\n`;
+            
+            if (albumImageUrl) {
+                xspfContent += `  <image>${albumImageUrl.replace(/&/g, '&amp;')}</image>\n`;
+            }
+            
+            xspfContent += `  <trackList>\n${xspfTrackEntries.join('\n')}\n  </trackList>\n</playlist>`;
 
-        // 4. Assemble XSPF XML structure
-        const xspfContent = `<?xml version="1.0" encoding="UTF-8"?>
-<playlist version="1.0" xmlns="http://xspf.org/ns/0/">
-  <title>${albumTitle.replace(/&/g, '&amp;')}</title>
-  ${albumImage ? `<image>${albumImage.replace(/&/g, '&amp;')}</image>` : ''}
-  <trackList>
-${xspfTrackEntries.join('\n')}
-  </trackList>
-</playlist>`;
+            const blob = new Blob([xspfContent], { type: 'application/xspf+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = sanitizedFilename;
+            document.body.appendChild(a); // Append to body to ensure click works in all browsers
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            console.log(`✅ Success! Playlist V3.3 downloaded: ${sanitizedFilename}`);
+        };
 
-        // 5. Generate Blob and trigger download
-        const blob = new Blob([xspfContent], { type: 'application/xspf+xml' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = sanitizedFilename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        processTracks();
 
-        console.log(`✅ Playlist ready! Filename: ${sanitizedFilename}`);
-    };
-
-    processTracks();
+    } catch (globalError) {
+        console.error("❌ A critical error occurred in V3.3:", globalError);
+    }
 })();
