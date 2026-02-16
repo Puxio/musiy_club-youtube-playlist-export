@@ -8,6 +8,9 @@ big catalogue and high quality music
 KHisider:
 video games music
 
+Squidy.org:
+modern video games music in HQ
+
 Youtube:
 Youtube use an Invidious public instance, change istance if it's not available.
 (Some Invidious instances doesn't accept CORS so there's a redirect script)
