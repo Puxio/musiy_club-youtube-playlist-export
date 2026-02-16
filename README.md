@@ -1,6 +1,6 @@
 # Musify.club Youtube KHisider export album/playst to xspf playlist
 
-Export Musify.club KHinsider and Youtube.com (albums or playlist) to xspf playlists and stream them in your favourite player. 
+Export Musify.club | KHinsider | Squidify | and Youtube.com (albums or playlist) to xspf playlists and stream them in your favourite player. 
 
 Musify.club :
 big catalogue and high quality music
