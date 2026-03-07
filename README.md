@@ -2,14 +2,14 @@
 
 Export Musify.club | KHinsider | Squidify | and Youtube.com (albums or playlist) to xspf playlists and stream them in your favourite player. 
 
-Musify.club :
-big catalogue and high quality music
+[Musify.club](https://musify.club/en):
+big catalogue and high quality music (320 kbps mp3)
 
-KHisider:
-video games music
+[KHisider](https://downloads.khinsider.com/):
+video games music, gamerips and more
 
-Squidy.org:
-modern video games music in HQ
+[Squidify.org](https://www.squidify.org/):
+modern video games music in HD (FLAC)
 
 Youtube:
 Youtube use an Invidious public instance, change istance if it's not available.
