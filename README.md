@@ -1,4 +1,4 @@
-# Export playlist in .xspf and play in yout player
+# Export playlist in .xspf and play in your player
 
 Export Musify.club | KHinsider | Squidify | and Youtube.com (albums or playlist) to xspf playlists and stream them in your favourite player. 
 
